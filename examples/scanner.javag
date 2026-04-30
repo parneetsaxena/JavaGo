@@ -1,0 +1,9 @@
+Go.utilities(Scanner)
+
+class Main {
+    main() {
+        Go.println("Enter your name:");
+        String name = input.nextLine();
+        Go.println("Hello, " + name);
+    }
+}

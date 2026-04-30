@@ -1,0 +1,5 @@
+class Main {
+    private int main() {
+        Go.println("Adjusted signature");
+    }
+}

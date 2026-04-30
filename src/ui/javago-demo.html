@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaGo Demo IDE</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --panel-strong: #1f2937;
+            --border: #30363d;
+            --text: #e6edf3;
+            --muted: #8b949e;
+            --accent: #2f81f7;
+            --accent-hover: #1f6feb;
+            --success: #3fb950;
+            --shadow: rgba(0, 0, 0, 0.35);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at top left, rgba(47, 129, 247, 0.18), transparent 32rem),
+                linear-gradient(135deg, #0d1117 0%, #111827 100%);
+            color: var(--text);
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .app {
+            min-height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr 190px;
+            gap: 14px;
+            padding: 18px;
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 14px 16px;
+            background: rgba(22, 27, 34, 0.88);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 18px 50px var(--shadow);
+            backdrop-filter: blur(12px);
+        }
+
+        .title h1 {
+            margin: 0;
+            font-size: 1.2rem;
+            letter-spacing: 0.04em;
+        }
+
+        .title p {
+            margin: 4px 0 0;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 16px;
+            color: white;
+            background: var(--accent);
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 140ms ease, background 140ms ease, box-shadow 140ms ease;
+            box-shadow: 0 10px 26px rgba(47, 129, 247, 0.28);
+        }
+
+        button:hover {
+            background: var(--accent-hover);
+            transform: translateY(-1px);
+        }
+
+        button.secondary {
+            background: var(--panel-strong);
+            border: 1px solid var(--border);
+            color: var(--text);
+            box-shadow: none;
+        }
+
+        button.secondary:hover {
+            background: #273449;
+        }
+
+        .workspace {
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        .panel {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: rgba(22, 27, 34, 0.92);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 18px 50px var(--shadow);
+        }
+
+        .panel-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            color: var(--text);
+            background: rgba(31, 41, 55, 0.7);
+            border-bottom: 1px solid var(--border);
+            font-size: 0.86rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .badge {
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: normal;
+        }
+
+        textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            resize: none;
+            border: 0;
+            outline: 0;
+            padding: 16px;
+            color: #d6deeb;
+            background: #0b1020;
+            font: 14px/1.55 Consolas, "Cascadia Code", "Courier New", monospace;
+            tab-size: 4;
+        }
+
+        textarea::selection {
+            background: rgba(47, 129, 247, 0.35);
+        }
+
+        textarea[readonly] {
+            color: #b8c7dc;
+        }
+
+        .console textarea {
+            color: #d2f8d2;
+            background: #07130b;
+        }
+
+        @media (max-width: 800px) {
+            .app {
+                grid-template-rows: auto auto 190px;
+            }
+
+            header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .workspace {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <header>
+            <div class="title">
+                <h1>JavaGo Demo IDE</h1>
+                <p>HTML frontend connected to the JavaGo backend</p>
+            </div>
+            <div class="actions">
+                <button id="transpileBtn">Transpile</button>
+                <button id="runBtn" class="secondary">Run</button>
+            </div>
+        </header>
+
+        <section class="workspace">
+            <section class="panel">
+                <div class="panel-title">
+                    JavaGo Code
+                    <span class="badge">.javag</span>
+                </div>
+                <textarea id="sourceCode" spellcheck="false">Go.utilities(Scanner input, Random rand);
+
+class Test {
+    main() {
+        Go.println("Hello from JavaGo");
+        Go.println(rand.nextInt(10));
+    }
+}</textarea>
+            </section>
+
+            <section class="panel">
+                <div class="panel-title">
+                    Generated Java
+                    <span class="badge">read-only preview</span>
+                </div>
+                <textarea id="javaCode" readonly spellcheck="false"></textarea>
+            </section>
+        </section>
+
+        <section class="panel console">
+            <div class="panel-title">
+                Output Console
+                <span class="badge">real runtime</span>
+            </div>
+            <textarea id="outputConsole" readonly spellcheck="false"></textarea>
+        </section>
+    </main>
+
+    <script>
+        const sourceCode = document.getElementById("sourceCode");
+        const javaCode = document.getElementById("javaCode");
+        const outputConsole = document.getElementById("outputConsole");
+        const transpileBtn = document.getElementById("transpileBtn");
+        const runBtn = document.getElementById("runBtn");
+
+        async function postText(path, body) {
+            const response = await fetch(path, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "text/plain; charset=utf-8"
+                },
+                body
+            });
+
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error(text || `Request failed with status ${response.status}`);
+            }
+            return text;
+        }
+
+        async function transpile() {
+            outputConsole.value = "Transpiling...";
+            try {
+                javaCode.value = await postText("/transpile", sourceCode.value);
+                outputConsole.value = "";
+            } catch (error) {
+                outputConsole.value = error.message;
+            }
+        }
+
+        async function run() {
+            outputConsole.value = "Running...";
+            try {
+                javaCode.value = await postText("/transpile", sourceCode.value);
+                outputConsole.value = await postText("/run", sourceCode.value);
+            } catch (error) {
+                outputConsole.value = error.message;
+            }
+        }
+
+        transpileBtn.addEventListener("click", transpile);
+        runBtn.addEventListener("click", run);
+
+        outputConsole.value = "Start the Java backend and click Transpile or Run.";
+    </script>
+</body>
+</html>

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JavaGo IDE</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <style>
+        :root {
+            --bg: #090d14;
+            --panel: #111827;
+            --panel-soft: #0d1320;
+            --border: #2a3446;
+            --text: #e6edf3;
+            --muted: #93a4b8;
+            --blue: #2f81f7;
+            --blue-hover: #1f6feb;
+            --green: #2ea043;
+            --green-hover: #238636;
+            --danger: #ff7b72;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(circle at 10% 0%, rgba(47, 129, 247, 0.18), transparent 32rem),
+                linear-gradient(135deg, #090d14, #0f172a);
+            color: var(--text);
+            font-family: "Segoe UI", Tahoma, sans-serif;
+        }
+
+        .app {
+            height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr 280px;
+            gap: 12px;
+            padding: 14px;
+        }
+
+        header,
+        .panel {
+            background: rgba(17, 24, 39, 0.94);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
+        }
+
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+            padding: 14px 16px;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 18px;
+            letter-spacing: 0.03em;
+        }
+
+        .subtitle {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            border: 0;
+            border-radius: 10px;
+            padding: 10px 16px;
+            color: white;
+            background: var(--blue);
+            font-weight: 800;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: var(--blue-hover);
+        }
+
+        button.run {
+            background: var(--green);
+        }
+
+        button.run:hover {
+            background: var(--green-hover);
+        }
+
+        .workspace {
+            min-height: 0;
+            display: grid;
+            grid-template-columns: 1.1fr 1fr;
+            gap: 12px;
+        }
+
+        .panel {
+            min-height: 0;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .panel-title {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 10px 12px;
+            color: var(--muted);
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .hint {
+            color: #6f8096;
+            font-weight: 700;
+            letter-spacing: 0;
+            text-transform: none;
+        }
+
+        textarea,
+        #highlighting {
+            margin: 0;
+            padding: 14px;
+            border: 0;
+            outline: 0;
+            font: 14px/1.55 Consolas, "Cascadia Code", "Courier New", monospace;
+            tab-size: 4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        textarea {
+            flex: 1;
+            width: 100%;
+            min-height: 0;
+            resize: none;
+            color: #d6deeb;
+            background: var(--panel-soft);
+        }
+
+        textarea[readonly] {
+            color: #b8c7dc;
+        }
+
+        .editor-container {
+            position: relative;
+            flex: 1;
+            min-height: 0;
+            background: var(--panel-soft);
+            overflow: hidden;
+        }
+
+        #highlighting,
+        #editor {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+        }
+
+        #highlighting {
+            pointer-events: none;
+            background: transparent;
+        }
+
+        #highlighting code {
+            display: block;
+            min-height: 100%;
+            background: transparent;
+            font: inherit;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        #editor {
+            color: transparent;
+            caret-color: var(--text);
+            background: transparent;
+        }
+
+        #editor::selection {
+            background: rgba(47, 129, 247, 0.34);
+            color: transparent;
+        }
+
+        #terminal {
+            flex: 1;
+            min-height: 0;
+            overflow: auto;
+            padding: 14px;
+            color: #d8ffd8;
+            background: #07130b;
+            font: 14px/1.55 Consolas, "Cascadia Code", "Courier New", monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+            outline: 0;
+            caret-color: #d8ffd8;
+        }
+
+        .error {
+            color: var(--danger);
+        }
+
+        @media (max-width: 900px) {
+            .app {
+                height: auto;
+                min-height: 100vh;
+                grid-template-rows: auto auto auto;
+            }
+
+            header {
+                align-items: flex-start;
+                flex-direction: column;
+            }
+
+            .panel {
+                min-height: 260px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <main class="app">
+        <header>
+            <div>
+                <h1>JavaGo IDE</h1>
+                <div class="subtitle">Real transpile and run via Java backend</div>
+            </div>
+            <div class="actions">
+                <button id="transpileBtn">Transpile</button>
+                <button id="runBtn" class="run">Run</button>
+            </div>
+        </header>
+
+        <section class="workspace">
+            <section class="panel">
+                <div class="panel-title">
+                    JavaGo Code
+                    <span class="hint">Tab inserts 4 spaces</span>
+                </div>
+                <div class="editor-container">
+                    <pre id="highlighting" aria-hidden="true"><code class="language-java"></code></pre>
+                    <textarea id="editor" spellcheck="false">Go.utilities(Scanner input);
+
+class Test {
+    main() {
+        Go.println("Enter your name:");
+        String name = input.nextLine();
+        Go.println("Hello, " + name);
+    }
+}</textarea>
+                </div>
+            </section>
+
+            <section class="panel">
+                <div class="panel-title">Generated Java</div>
+                <textarea id="javaCode" readonly spellcheck="false"></textarea>
+            </section>
+        </section>
+
+        <section class="panel">
+            <div class="panel-title">
+                Terminal
+                <span class="hint">type input here and press Enter</span>
+            </div>
+            <div id="terminal" contenteditable="true" spellcheck="false"></div>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-java.min.js"></script>
+    <script>
+        const API_BASE = location.protocol === "file:" ? "http://localhost:8080" : "";
+
+        const editor = document.getElementById("editor");
+        const highlighting = document.getElementById("highlighting");
+        const highlightingCode = highlighting.querySelector("code");
+        const javaCode = document.getElementById("javaCode");
+        const terminal = document.getElementById("terminal");
+        const transpileBtn = document.getElementById("transpileBtn");
+        const runBtn = document.getElementById("runBtn");
+
+        let activeSessionId = null;
+        let eventSource = null;
+        let lockedLength = 0;
+        let currentTerminalInput = "";
+
+        async function postText(path, body, contentType = "text/plain; charset=utf-8") {
+            const response = await fetch(API_BASE + path, {
+                method: "POST",
+                headers: {
+                    "Content-Type": contentType
+                },
+                body
+            });
+
+            const text = await response.text();
+            if (!response.ok) {
+                throw new Error(text || `Request failed with status ${response.status}`);
+            }
+            return text;
+        }
+
+        async function transpileCode() {
+            clearTerminal();
+            try {
+                javaCode.value = await postText("/transpile", editor.value);
+            } catch (error) {
+                appendToTerminal(error.message + "\n");
+            }
+        }
+
+        async function runCode() {
+            stopActiveStream();
+            clearTerminal();
+            try {
+                javaCode.value = await postText("/transpile", editor.value);
+                activeSessionId = (await postText("/run", editor.value)).trim();
+                openStream(activeSessionId);
+                terminal.focus();
+                moveCaretToEnd();
+            } catch (error) {
+                appendToTerminal(error.message + "\n");
+            }
+        }
+
+        function updateHighlighting() {
+            const code = editor.value;
+
+            if (window.Prism && Prism.languages.java) {
+                highlightingCode.innerHTML = Prism.highlight(
+                    code,
+                    Prism.languages.java,
+                    "java"
+                ) + "\n";
+            } else {
+                highlightingCode.textContent = code + "\n";
+            }
+        }
+
+        function insertTab(textarea, spaces) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+            const value = textarea.value;
+
+            if (start !== end && value.slice(start, end).includes("\n")) {
+                const lineStart = value.lastIndexOf("\n", start - 1) + 1;
+                const selected = value.slice(lineStart, end);
+                const lines = selected.split("\n");
+                const indented = lines.map(line => spaces + line).join("\n");
+                textarea.value = value.slice(0, lineStart) + indented + value.slice(end);
+                textarea.selectionStart = start + spaces.length;
+                textarea.selectionEnd = lineStart + indented.length;
+            } else {
+                textarea.value = value.slice(0, start) + spaces + value.slice(end);
+                textarea.selectionStart = textarea.selectionEnd = start + spaces.length;
+            }
+
+            if (textarea === editor) {
+                updateHighlighting();
+            }
+        }
+
+        function enableTabIndent(textarea) {
+            textarea.addEventListener("keydown", event => {
+                if (event.key === "Tab") {
+                    event.preventDefault();
+                    insertTab(textarea, "    ");
+                }
+            });
+        }
+
+        editor.addEventListener("input", updateHighlighting);
+        editor.addEventListener("scroll", () => {
+            highlighting.scrollTop = editor.scrollTop;
+            highlighting.scrollLeft = editor.scrollLeft;
+        });
+
+        enableTabIndent(editor);
+
+        function openStream(sessionId) {
+            eventSource = new EventSource(API_BASE + "/stream?id=" + encodeURIComponent(sessionId));
+
+            eventSource.addEventListener("output", event => {
+                appendToTerminal(event.data);
+            });
+
+            eventSource.addEventListener("done", event => {
+                appendToTerminal(event.data);
+                stopActiveStream();
+            });
+
+            eventSource.onerror = () => {
+                appendToTerminal("\n[terminal connection closed]\n");
+                stopActiveStream();
+            };
+        }
+
+        async function sendTerminalInput(line) {
+            if (!activeSessionId) {
+                return;
+            }
+
+            try {
+                console.log("SEND TO BACKEND:", line);
+                await postText("/input?id=" + encodeURIComponent(activeSessionId), line);
+            } catch (error) {
+                appendToTerminal("\n" + error.message + "\n");
+            }
+        }
+
+        function stopActiveStream() {
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
+            activeSessionId = null;
+        }
+
+        function clearTerminal() {
+            terminal.textContent = "";
+            lockedLength = 0;
+            currentTerminalInput = "";
+            moveCaretToEnd();
+        }
+
+        function appendToTerminal(text) {
+            const currentInput = terminal.textContent.slice(lockedLength);
+            const output = terminal.textContent.slice(0, lockedLength);
+            terminal.textContent = output + text + currentInput;
+            lockedLength = output.length + text.length;
+            currentTerminalInput = terminal.textContent.slice(lockedLength);
+            terminal.scrollTop = terminal.scrollHeight;
+            moveCaretToEnd();
+        }
+
+        function getCurrentLine() {
+            return currentTerminalInput;
+        }
+
+        function getCaretOffset(element) {
+            const selection = window.getSelection();
+            if (!selection.rangeCount) {
+                return element.textContent.length;
+            }
+            const range = selection.getRangeAt(0);
+            const preRange = range.cloneRange();
+            preRange.selectNodeContents(element);
+            preRange.setEnd(range.endContainer, range.endOffset);
+            return preRange.toString().length;
+        }
+
+        function moveCaretToEnd() {
+            const range = document.createRange();
+            const selection = window.getSelection();
+            range.selectNodeContents(terminal);
+            range.collapse(false);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        }
+
+        function ensureEditableAtEnd() {
+            if (getCaretOffset(terminal) < lockedLength) {
+                moveCaretToEnd();
+            }
+        }
+
+        terminal.addEventListener("beforeinput", event => {
+            if (getCaretOffset(terminal) < lockedLength) {
+                event.preventDefault();
+                moveCaretToEnd();
+            }
+        });
+
+        terminal.addEventListener("keydown", event => {
+            console.log("KEYDOWN:", event.key, {
+                textContent: terminal.textContent,
+                innerText: terminal.innerText,
+                lockedLength
+            });
+
+            if (event.key === "Enter") {
+                event.preventDefault();
+                const inputLine = getCurrentLine();
+                console.log("SUBMIT CURRENT LINE:", inputLine);
+                terminal.textContent += "\n";
+                lockedLength = terminal.textContent.length;
+                currentTerminalInput = "";
+                moveCaretToEnd();
+                sendTerminalInput(inputLine);
+                return;
+            }
+
+            if ((event.key === "Backspace" || event.key === "ArrowLeft") && getCaretOffset(terminal) <= lockedLength) {
+                event.preventDefault();
+                moveCaretToEnd();
+            }
+        });
+
+        terminal.addEventListener("input", () => {
+            console.log("RAW TEXT BEFORE READ:", {
+                textContent: terminal.textContent,
+                innerText: terminal.innerText,
+                lockedLength
+            });
+            currentTerminalInput = terminal.textContent.slice(lockedLength);
+            console.log("CURRENT TERMINAL INPUT:", currentTerminalInput);
+        });
+
+        terminal.addEventListener("mouseup", ensureEditableAtEnd);
+        terminal.addEventListener("keyup", ensureEditableAtEnd);
+
+        transpileBtn.addEventListener("click", transpileCode);
+        runBtn.addEventListener("click", runCode);
+
+        updateHighlighting();
+    </script>
+</body>
+</html>

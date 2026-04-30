@@ -1,0 +1,5 @@
+class Test {
+    main() {
+        Go.println("Hello from JavaGo");
+    }
+}

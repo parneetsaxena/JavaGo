@@ -1,0 +1,8 @@
+Go.utilities(Scanner input, Random random);
+
+class testing{
+     main(){
+        int num = input();
+        Go.println("Age is: ", num);
+    }
+}
