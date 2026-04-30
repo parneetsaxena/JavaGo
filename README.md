@@ -146,4 +146,4 @@ Longer term, JavaGo could grow into a stronger authoring layer for JVM developme
 
 ## 📄 License
 
-No license file is included yet. If this is intended for public reuse, add a license before publishing broadly.
+This project is licensed under the MIT License. See the LICENSE file for details.
