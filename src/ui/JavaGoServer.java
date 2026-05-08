@@ -15,6 +15,8 @@ import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.BlockingQueue;
@@ -51,13 +53,13 @@ public final class JavaGoServer {
             return;
         }
 
-        Path html = Path.of("src", "ui", "javago-frontend.html");
-        if (!Files.exists(html)) {
-            send(exchange, 404, "src/ui/javago-frontend.html not found", "text/plain");
+        String frontend = loadFrontendHtml();
+        if (frontend == null) {
+            send(exchange, 404, "javago-frontend.html not found", "text/plain; charset=utf-8");
             return;
         }
 
-        send(exchange, 200, Files.readString(html, StandardCharsets.UTF_8), "text/html; charset=utf-8");
+        send(exchange, 200, frontend, "text/html; charset=utf-8");
     }
 
     private void handleTranspile(HttpExchange exchange) throws IOException {
@@ -254,6 +256,32 @@ public final class JavaGoServer {
 
     private String readBody(HttpExchange exchange) throws IOException {
         return new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
+    }
+
+    private String loadFrontendHtml() throws IOException {
+        try (InputStream resource = JavaGoServer.class.getResourceAsStream("/ui/javago-frontend.html")) {
+            if (resource != null) {
+                return new String(resource.readAllBytes(), StandardCharsets.UTF_8);
+            }
+        }
+
+        for (Path candidate : frontendCandidates()) {
+            if (Files.exists(candidate) && Files.isRegularFile(candidate)) {
+                return Files.readString(candidate, StandardCharsets.UTF_8);
+            }
+        }
+
+        return null;
+    }
+
+    private List<Path> frontendCandidates() {
+        return List.of(
+                Path.of("src", "ui", "javago-frontend.html"),
+                Path.of("ui", "javago-frontend.html"),
+                Path.of("javago-frontend.html"),
+                Paths.get("").toAbsolutePath().resolve("src").resolve("ui").resolve("javago-frontend.html"),
+                Paths.get("").toAbsolutePath().resolve("ui").resolve("javago-frontend.html")
+        );
     }
 
     private String queryParam(HttpExchange exchange, String name) {
